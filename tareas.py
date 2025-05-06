@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
 from models import Tarea
 from database import get_session
@@ -7,8 +7,7 @@ router = APIRouter(prefix="/tareas")
 
 @router.post("/")
 def agregar_tarea(tarea: Tarea, session: Session = Depends(get_session)):
-    db_tarea = session.get(Tarea, tarea.id)
-    if db_tarea:
+    if session.get(Tarea, tarea.id):
         raise HTTPException(status_code=400, detail="Tarea con ese ID ya existe")
     session.add(tarea)
     session.commit()
