@@ -1,10 +1,12 @@
 # database.py
-from sqlalchemy import create_engine, Column, Integer, String
+
+from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # URL de conexión a la base de datos SQLite.
-# './sql_app.db' creará un archivo llamado sql_app.db en el mismo directorio.
+# './sql_app.db' creará un archivo llamado sql_app.db en el mismo directorio que main.py.
+# Usamos una ruta relativa simple aquí.
 SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
 
 # Crear el motor de la base de datos.
@@ -18,33 +20,17 @@ engine = create_engine(
 # autoflush=False: no volcará las operaciones al DB hasta que llames a .commit() o .flush().
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Declarar una base para tus clases de modelo.
+# Declarar una base para tus clases de modelo SQLAlchemy.
+# Todos tus modelos SQLAlchemy deben heredar de esta clase Base.
 Base = declarative_base()
 
-# --- Definir tus modelos (clases de base de datos) ---
-
-class User(Base):
-    __tablename__ = "users" # Nombre de la tabla en la base de datos
-
-    id = Column(Integer, primary_key=True, index=True) # Columna ID, clave primaria, indexada
-    nombre = Column(String, index=True) # Columna Nombre, indexada
-    email = Column(String, unique=True, index=True) # Columna Email, debe ser único, indexada
-    # Puedes añadir más columnas según tus datos
-    # tipo = Column(String)
-    # estado = Column(String)
-
-# Puedes definir otros modelos aquí, por ejemplo, para 'Tareas' si las necesitas.
-# class Tarea(Base):
-#     __tablename__ = "tareas"
-#     id = Column(Integer, primary_key=True, index=True)
-#     titulo = Column(String, index=True)
-#     descripcion = Column(String)
-#     # Puedes añadir una clave foránea si una tarea pertenece a un usuario
-#     # owner_id = Column(Integer, ForeignKey("users.id"))
-#     # owner = relationship("User", back_populates="tareas") # Si defines 'tareas' en el modelo User
-
-# Para que los modelos User puedan tener tareas
-# class User(Base):
-#     __tablename__ = "users"
-#     # ... otras columnas ...
-#     tareas = relationship("Tarea", back_populates="owner")
+# --- Dependencia para obtener una sesión de base de datos ---
+# Esta función se usa en los endpoints (con Depends) para obtener una sesión de DB.
+# Asegura que cada solicitud obtenga su propia sesión de base de datos independiente
+# y que la sesión se cierre automáticamente después de que la solicitud termine.
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db # Proporciona la sesión a la ruta que la solicita
+    finally:
+        db.close() # Cierra la sesión de la base de datos al finalizar la solicitud
