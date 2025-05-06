@@ -1,35 +1,36 @@
-from fastapi import HTTPException
-from sqlalchemy.orm import Session
-from models import Tarea, TareaCreate
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session, select
+from models import Tarea
+from database import get_session
 
-# Función para agregar tarea
-def agregar_tarea(tarea: TareaCreate, db: Session):
-    # Verificar si la tarea ya existe
-    db_tarea = db.query(Tarea).filter(Tarea.titulo == tarea.titulo).first()
+router = APIRouter(prefix="/tareas")
+
+@router.post("/")
+def agregar_tarea(tarea: Tarea, session: Session = Depends(get_session)):
+    db_tarea = session.get(Tarea, tarea.id)
     if db_tarea:
-        raise HTTPException(status_code=400, detail="La tarea ya existe.")
-    
-    db_tarea = Tarea(**tarea.dict())
-    db.add(db_tarea)
-    db.commit()
-    db.refresh(db_tarea)
-    return db_tarea
+        raise HTTPException(status_code=400, detail="Tarea con ese ID ya existe")
+    session.add(tarea)
+    session.commit()
+    session.refresh(tarea)
+    return tarea
 
-# Función para obtener todas las tareas
-def obtener_tareas(db: Session):
-    return db.query(Tarea).all()
+@router.get("/")
+def obtener_tareas(session: Session = Depends(get_session)):
+    return session.exec(select(Tarea)).all()
 
-# Función para eliminar tarea
-def eliminar_tarea(tarea_id: int, db: Session):
-    tarea = db.query(Tarea).filter(Tarea.id == tarea_id).first()
-    if tarea is None:
+@router.get("/{tarea_id}")
+def buscar_tarea(tarea_id: int, session: Session = Depends(get_session)):
+    tarea = session.get(Tarea, tarea_id)
+    if not tarea:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
-    
-    db.delete(tarea)
-    db.commit()
-    return {"mensaje": "Tarea eliminada correctamente"}
+    return tarea
 
-# Función para buscar tareas por título
-def buscar_tarea(titulo: str, db: Session):
-    resultados = db.query(Tarea).filter(Tarea.titulo.ilike(f"%{titulo}%")).all()
-    return resultados
+@router.delete("/{tarea_id}")
+def eliminar_tarea(tarea_id: int, session: Session = Depends(get_session)):
+    tarea = session.get(Tarea, tarea_id)
+    if not tarea:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+    session.delete(tarea)
+    session.commit()
+    return {"mensaje": "Tarea eliminada correctamente"}

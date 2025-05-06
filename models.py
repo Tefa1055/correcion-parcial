@@ -5,5 +5,3 @@ class Tarea(SQLModel, table=True):
     titulo: str
     descripcion: str
     completado: bool = False
- 
->>>>>>> respaldo-cambios
