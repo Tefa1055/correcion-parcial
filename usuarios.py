@@ -54,3 +54,4 @@ def obtener_usuario(usuario_id: int):
         if usuario["id"] == usuario_id:
             return usuario
     raise HTTPException(status_code=404, detail="Usuario no encontrado")
+ 
