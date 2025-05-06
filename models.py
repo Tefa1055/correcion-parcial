@@ -1,10 +1,7 @@
-from pydantic import BaseModel
+from sqlmodel import SQLModel, Field
 
-class Usuario(BaseModel):
-    id: int
-    nombre: str
-    tipo: str  # Puede ser "Premium" o "Normal"
-    estado: str  # Puede ser "Activo" o "Inactivo"
-
-class EstadoUsuario(BaseModel):
-    estado: str  # "Activo" o "Inactivo"
+class Tarea(SQLModel, table=True):
+    id: int = Field(default=None, primary_key=True)
+    titulo: str
+    descripcion: str
+    completado: bool = False
