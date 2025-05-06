@@ -1,48 +1,27 @@
-from fastapi import FastAPI
-from usuarios import router as usuarios_router
-from pydantic import BaseModel
-from fastapi import HTTPException
+from fastapi import FastAPI, Depends
+from sqlalchemy.orm import Session
+from db import get_db
+from tareas import agregar_tarea, obtener_tareas, eliminar_tarea, buscar_tarea
+from models import TareaCreate, Tarea
 
 app = FastAPI()
 
-# Incluir el router de usuarios
-app.include_router(usuarios_router)
+# Endpoint para crear tarea
+@app.post("/tareas/")
+def crear_tarea(tarea: TareaCreate, db: Session = Depends(get_db)):
+    return agregar_tarea(tarea, db)
 
-# ====================
-# MODELO DE TAREA
-# ====================
-class Tarea(BaseModel):
-    id: int
-    titulo: str
-    descripcion: str
+# Endpoint para listar todas las tareas
+@app.get("/tareas/")
+def listar_tareas(db: Session = Depends(get_db)):
+    return obtener_tareas(db)
 
-# Base de datos temporal en memoria
-tareas_db = []
-
-# ====================
-# ENDPOINTS DE TAREAS
-# ====================
-
-@app.post("/tareas")
-def crear_tarea(tarea: Tarea):
-    if any(t.id == tarea.id for t in tareas_db):
-        raise HTTPException(status_code=400, detail="La tarea ya existe.")
-    tareas_db.append(tarea)
-    return tarea
-
-@app.get("/tareas")
-def listar_tareas():
-    return tareas_db
-
+# Endpoint para eliminar tarea
 @app.delete("/tareas/{tarea_id}")
-def borrar_tarea(tarea_id: int):
-    for tarea in tareas_db:
-        if tarea.id == tarea_id:
-            tareas_db.remove(tarea)
-            return {"mensaje": "Tarea eliminada correctamente"}
-    raise HTTPException(status_code=404, detail="Tarea no encontrada")
+def borrar_tarea(tarea_id: int, db: Session = Depends(get_db)):
+    return eliminar_tarea(tarea_id, db)
 
+# Endpoint para buscar tareas por título
 @app.get("/tareas/buscar/")
-def buscar_tareas(titulo: str):
-    resultados = [t for t in tareas_db if titulo.lower() in t.titulo.lower()]
-    return resultados
+def buscar_tareas(titulo: str, db: Session = Depends(get_db)):
+    return buscar_tarea(titulo, db)

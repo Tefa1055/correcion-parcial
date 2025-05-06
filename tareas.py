@@ -1,24 +1,35 @@
 from fastapi import HTTPException
-from models import Tarea
+from sqlalchemy.orm import Session
+from models import Tarea, TareaCreate
 
-tareas_db = []
-
-def agregar_tarea(tarea: Tarea):
-    if any(t.id == tarea.id for t in tareas_db):
+# Función para agregar tarea
+def agregar_tarea(tarea: TareaCreate, db: Session):
+    # Verificar si la tarea ya existe
+    db_tarea = db.query(Tarea).filter(Tarea.titulo == tarea.titulo).first()
+    if db_tarea:
         raise HTTPException(status_code=400, detail="La tarea ya existe.")
-    tareas_db.append(tarea)
-    return tarea
+    
+    db_tarea = Tarea(**tarea.dict())
+    db.add(db_tarea)
+    db.commit()
+    db.refresh(db_tarea)
+    return db_tarea
 
-def obtener_tareas():
-    return tareas_db
+# Función para obtener todas las tareas
+def obtener_tareas(db: Session):
+    return db.query(Tarea).all()
 
-def eliminar_tarea(tarea_id: int):
-    for tarea in tareas_db:
-        if tarea.id == tarea_id:
-            tareas_db.remove(tarea)
-            return {"mensaje": "Tarea eliminada correctamente"}
-    raise HTTPException(status_code=404, detail="Tarea no encontrada")
+# Función para eliminar tarea
+def eliminar_tarea(tarea_id: int, db: Session):
+    tarea = db.query(Tarea).filter(Tarea.id == tarea_id).first()
+    if tarea is None:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+    
+    db.delete(tarea)
+    db.commit()
+    return {"mensaje": "Tarea eliminada correctamente"}
 
-def buscar_tarea(titulo: str):
-    resultados = [t for t in tareas_db if titulo.lower() in t.titulo.lower()]
+# Función para buscar tareas por título
+def buscar_tarea(titulo: str, db: Session):
+    resultados = db.query(Tarea).filter(Tarea.titulo.ilike(f"%{titulo}%")).all()
     return resultados
