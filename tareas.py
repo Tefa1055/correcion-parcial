@@ -11,7 +11,6 @@ def agregar_tarea(tarea: Tarea, session: Session = Depends(get_session)):
         raise HTTPException(status_code=400, detail="Tarea con ese ID ya existe")
     session.add(tarea)
     session.commit()
-    session.refresh(tarea)
     return tarea
 
 @router.get("/")
