@@ -10,3 +10,7 @@ crear_tablas()
 # Rutas requeridas por el taller
 app.include_router(users_router)
 app.include_router(tareas_router)
+
+@app.get("/")
+def root():
+    return {"mensaje": "API funcionando"}
