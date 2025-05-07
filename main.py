@@ -3,7 +3,11 @@ from users import router as users_router
 from tareas import router as tareas_router
 from database import crear_tablas
 
-app = FastAPI()
+app = FastAPI(
+    title="API de corrección",
+    docs_url="/docs",
+    redoc_url=None
+)
 
 crear_tablas()
 
